@@ -12,6 +12,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import ManagerScheduleScreen from './src/screens/ManagerScheduleScreen';
 import AttendanceScreen from './src/screens/AttendanceScreen';
+import TasksScreen from './src/screens/TasksScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -46,6 +47,7 @@ function EmployeeTabs() {
     })}>
       <Tab.Screen name="Главная" component={EmployeeHomeScreen} />
       <Tab.Screen name="Отметки" component={AttendanceScreen} />
+      <Tab.Screen name="Задачи" component={TasksScreen} />
       <Tab.Screen name="График" component={ScheduleScreen} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
     </Tab.Navigator>
@@ -64,7 +66,7 @@ function ManagerTabs() {
     })}>
       <Tab.Screen name="Главная" component={ManagerHomeScreen} />
       <Tab.Screen name="График" component={ManagerScheduleScreen} />
-      <Tab.Screen name="Задачи" component={PlaceholderScreen('Задачи')} />
+      <Tab.Screen name="Задачи" component={TasksScreen} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
     </Tab.Navigator>
   );
