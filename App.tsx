@@ -13,6 +13,7 @@ import ScheduleScreen from './src/screens/ScheduleScreen';
 import ManagerScheduleScreen from './src/screens/ManagerScheduleScreen';
 import AttendanceScreen from './src/screens/AttendanceScreen';
 import ManagerAttendanceScreen from './src/screens/ManagerAttendanceScreen';
+import ManagerTasksScreen from './src/screens/ManagerTasksScreen';
 import TasksScreen from './src/screens/TasksScreen';
 
 const Stack = createNativeStackNavigator();
@@ -55,7 +56,7 @@ function ManagerTabs() {
       <Tab.Screen name="Главная" component={ManagerHomeScreen} />
       <Tab.Screen name="Посещ." component={ManagerAttendanceScreen} />
       <Tab.Screen name="График" component={ManagerScheduleScreen} />
-      <Tab.Screen name="Задачи" component={TasksScreen} />
+      <Tab.Screen name="Задачи" component={ManagerTasksScreen} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
     </Tab.Navigator>
   );
