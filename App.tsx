@@ -11,12 +11,13 @@ import ManagerHomeScreen from './src/screens/ManagerHomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import ManagerScheduleScreen from './src/screens/ManagerScheduleScreen';
+import AttendanceScreen from './src/screens/AttendanceScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = { 'Главная': '🏠', 'График': '📅', 'Задачи': '📋', 'Курсы': '📚', 'Профиль': '👤' };
+  const icons: Record<string, string> = { 'Главная': '🏠', 'График': '📅', 'Отметки': '⏰', 'Задачи': '📋', 'Курсы': '📚', 'Профиль': '👤' };
   return <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.5 }}>{icons[label] || '📌'}</Text>;
 }
 
@@ -27,7 +28,7 @@ function PlaceholderScreen(title: string) {
       <View style={StyleSheet.create({ c: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' } }).c}>
         <Text style={{ fontSize: 40, marginBottom: 12 }}>🏗️</Text>
         <Text style={{ color: '#666', fontSize: 16 }}>{title}</Text>
-        <Text style={{ color: '#444', fontSize: 13, marginTop: 4 }}>M5-M6</Text>
+        <Text style={{ color: '#444', fontSize: 13, marginTop: 4 }}>Скоро</Text>
       </View>
     );
   };
@@ -44,8 +45,8 @@ function EmployeeTabs() {
       tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
     })}>
       <Tab.Screen name="Главная" component={EmployeeHomeScreen} />
+      <Tab.Screen name="Отметки" component={AttendanceScreen} />
       <Tab.Screen name="График" component={ScheduleScreen} />
-      <Tab.Screen name="Курсы" component={PlaceholderScreen('Обучение')} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
     </Tab.Navigator>
   );
