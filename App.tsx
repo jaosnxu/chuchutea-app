@@ -1,6 +1,6 @@
 // CHUCHUTEA — Main App with Bottom Tabs + Role-based Routing
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,15 +9,28 @@ import LoginScreen from './src/screens/LoginScreen';
 import EmployeeHomeScreen from './src/screens/EmployeeHomeScreen';
 import ManagerHomeScreen from './src/screens/ManagerHomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import { Text } from 'react-native';
+import ScheduleScreen from './src/screens/ScheduleScreen';
+import ManagerScheduleScreen from './src/screens/ManagerScheduleScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Common tab icon component
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = { 'Главная': '🏠', 'Задачи': '📋', 'Курсы': '📚', 'Профиль': '👤' };
+  const icons: Record<string, string> = { 'Главная': '🏠', 'График': '📅', 'Задачи': '📋', 'Курсы': '📚', 'Профиль': '👤' };
   return <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.5 }}>{icons[label] || '📌'}</Text>;
+}
+
+function PlaceholderScreen(title: string) {
+  return function Screen() {
+    const { View, StyleSheet } = require('react-native');
+    return (
+      <View style={StyleSheet.create({ c: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' } }).c}>
+        <Text style={{ fontSize: 40, marginBottom: 12 }}>🏗️</Text>
+        <Text style={{ color: '#666', fontSize: 16 }}>{title}</Text>
+        <Text style={{ color: '#444', fontSize: 13, marginTop: 4 }}>M5-M6</Text>
+      </View>
+    );
+  };
 }
 
 function EmployeeTabs() {
@@ -31,7 +44,7 @@ function EmployeeTabs() {
       tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
     })}>
       <Tab.Screen name="Главная" component={EmployeeHomeScreen} />
-      <Tab.Screen name="Задачи" component={PlaceholderScreen('Задачи')} />
+      <Tab.Screen name="График" component={ScheduleScreen} />
       <Tab.Screen name="Курсы" component={PlaceholderScreen('Обучение')} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
     </Tab.Navigator>
@@ -49,25 +62,11 @@ function ManagerTabs() {
       tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
     })}>
       <Tab.Screen name="Главная" component={ManagerHomeScreen} />
+      <Tab.Screen name="График" component={ManagerScheduleScreen} />
       <Tab.Screen name="Задачи" component={PlaceholderScreen('Задачи')} />
-      <Tab.Screen name="Курсы" component={PlaceholderScreen('Обучение')} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
     </Tab.Navigator>
   );
-}
-
-// Placeholder screen factory
-function PlaceholderScreen(title: string) {
-  return function Screen() {
-    const { Text, View, StyleSheet } = require('react-native');
-    return (
-      <View style={StyleSheet.create({ container: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' } }).container}>
-        <Text style={{ fontSize: 40, marginBottom: 12 }}>🏗️</Text>
-        <Text style={{ color: '#666', fontSize: 16 }}>{title}</Text>
-        <Text style={{ color: '#444', fontSize: 13, marginTop: 4 }}>Скоро будет доступно</Text>
-      </View>
-    );
-  };
 }
 
 function AppNavigator() {
