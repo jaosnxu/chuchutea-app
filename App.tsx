@@ -17,14 +17,15 @@ import TrainingScreen from './src/screens/TrainingScreen';
 import TasksScreen from './src/screens/TasksScreen';
 import ApprovalScreen from './src/screens/ApprovalScreen';
 import PointsScreen from './src/screens/PointsScreen';
+import InventoryScanScreen from './src/screens/InventoryScanScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    'Главная':'🏠','График':'📅','Отметки':'⏰','Задачи':'📋','Курсы':'📚','Профиль':'👤',
-    'Посещ.':'👥','Соглас.':'✅','Баллы':'💰'
+    'Главная':'🏠','Склад':'📦','Задачи':'📋','Курсы':'📚','Профиль':'👤',
+    'Посещ.':'👥','Соглас.':'✅','Баллы':'💰','График':'📅','Отметки':'⏰'
   };
   return <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.5 }}>{icons[label] || '📌'}</Text>;
 }
@@ -38,6 +39,7 @@ function EmployeeTabs() {
       tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
     })}>
       <Tab.Screen name="Главная" component={EmployeeHomeScreen} />
+      <Tab.Screen name="Склад" component={InventoryScanScreen} />
       <Tab.Screen name="Задачи" component={TasksScreen} />
       <Tab.Screen name="Соглас." component={ApprovalScreen} />
       <Tab.Screen name="Баллы" component={PointsScreen} />
