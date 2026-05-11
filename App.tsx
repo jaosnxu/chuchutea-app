@@ -14,6 +14,7 @@ import ManagerScheduleScreen from './src/screens/ManagerScheduleScreen';
 import AttendanceScreen from './src/screens/AttendanceScreen';
 import ManagerAttendanceScreen from './src/screens/ManagerAttendanceScreen';
 import ManagerTasksScreen from './src/screens/ManagerTasksScreen';
+import TrainingScreen from './src/screens/TrainingScreen';
 import TasksScreen from './src/screens/TasksScreen';
 
 const Stack = createNativeStackNavigator();
@@ -35,6 +36,7 @@ function EmployeeTabs() {
       tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
     })}>
       <Tab.Screen name="Главная" component={EmployeeHomeScreen} />
+      <Tab.Screen name="Курсы" component={TrainingScreen} />
       <Tab.Screen name="Отметки" component={AttendanceScreen} />
       <Tab.Screen name="Задачи" component={TasksScreen} />
       <Tab.Screen name="График" component={ScheduleScreen} />
