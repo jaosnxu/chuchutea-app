@@ -12,27 +12,15 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import ManagerScheduleScreen from './src/screens/ManagerScheduleScreen';
 import AttendanceScreen from './src/screens/AttendanceScreen';
+import ManagerAttendanceScreen from './src/screens/ManagerAttendanceScreen';
 import TasksScreen from './src/screens/TasksScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = { 'Главная': '🏠', 'График': '📅', 'Отметки': '⏰', 'Задачи': '📋', 'Курсы': '📚', 'Профиль': '👤' };
+  const icons: Record<string, string> = { 'Главная': '🏠', 'График': '📅', 'Отметки': '⏰', 'Задачи': '📋', 'Курсы': '📚', 'Профиль': '👤', 'Посещ.': '👥' };
   return <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.5 }}>{icons[label] || '📌'}</Text>;
-}
-
-function PlaceholderScreen(title: string) {
-  return function Screen() {
-    const { View, StyleSheet } = require('react-native');
-    return (
-      <View style={StyleSheet.create({ c: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' } }).c}>
-        <Text style={{ fontSize: 40, marginBottom: 12 }}>🏗️</Text>
-        <Text style={{ color: '#666', fontSize: 16 }}>{title}</Text>
-        <Text style={{ color: '#444', fontSize: 13, marginTop: 4 }}>Скоро</Text>
-      </View>
-    );
-  };
 }
 
 function EmployeeTabs() {
@@ -65,6 +53,7 @@ function ManagerTabs() {
       tabBarIcon: ({ focused }) => <TabIcon label={route.name} focused={focused} />,
     })}>
       <Tab.Screen name="Главная" component={ManagerHomeScreen} />
+      <Tab.Screen name="Посещ." component={ManagerAttendanceScreen} />
       <Tab.Screen name="График" component={ManagerScheduleScreen} />
       <Tab.Screen name="Задачи" component={TasksScreen} />
       <Tab.Screen name="Профиль" component={ProfileScreen} />
