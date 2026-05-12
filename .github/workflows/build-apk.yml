@@ -26,21 +26,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Install npm dependencies
-        run: npm install
-
-      - name: Disable new arch
-        run: sed -i 's/newArchEnabled=true/newArchEnabled=false/' android/gradle.properties
+        run: npm ci
 
       - name: Build Release APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
-          export ANDROID_HOME=$ANDROID_HOME
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-          cd android && ./gradlew assembleRelease --no-daemon --stacktrace
-
-      - name: Verify APK exists
-        run: ls -la android/app/build/outputs/apk/release/
+          echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
