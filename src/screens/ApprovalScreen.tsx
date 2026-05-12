@@ -22,6 +22,11 @@ export default function ApprovalScreen() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'my'|'pending'|'history'>('my');
   const [showCreate, setShowCreate] = useState(false);
+  const [showReject, setShowReject] = useState(false);
+  const [rejectApprovalId, setRejectApprovalId] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectCustom, setRejectCustom] = useState('');
+  const [rejectReasons, setRejectReasons] = useState<{id:string;labelRu:string}[]>([]);
   const [form, setForm] = useState({ workflowType:'leave_request', referenceTitle:'', comment:'' });
   const [statusMsg, setStatusMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
@@ -51,9 +56,23 @@ export default function ApprovalScreen() {
   }
 
   async function actOnApproval(id:string, approved:boolean){
+    if(!approved){ openReject(id); return; }
     try{
       await authFetch(`/approvals/${id}`,{method:'POST',body:JSON.stringify({approved,comment:''})});
       loadAll();
+    }catch{}
+  }
+
+  async function openReject(id:string){
+    setRejectApprovalId(id); setShowReject(true);
+    try{ const r=await authFetch('/approvals/reject-reasons'); if(r.ok) setRejectReasons(await r.json()); }catch{}
+  }
+
+  async function submitReject(){
+    const comment = rejectReason === 'other' ? rejectCustom : (rejectReasons.find(r=>r.id===rejectReason)?.labelRu || rejectCustom);
+    try{
+      await authFetch(`/approvals/${rejectApprovalId}`,{method:'POST',body:JSON.stringify({approved:false,comment})});
+      setShowReject(false); setRejectReason(''); setRejectCustom(''); loadAll();
     }catch{}
   }
 
@@ -123,6 +142,35 @@ export default function ApprovalScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Reject Reason Modal */}
+      <Modal visible={showReject} transparent animationType="slide">
+        <View style={s.modalOverlay}>
+          <View style={s.modal}>
+            <Text style={s.modalTitle}>❌ Причина отказа</Text>
+            <Text style={s.modalHint}>Выберите или введите свою</Text>
+            {rejectReasons.map(r => (
+              <TouchableOpacity key={r.id}
+                style={[s.reasonOption, rejectReason === r.id && s.reasonOptionActive]}
+                onPress={() => setRejectReason(r.id)}>
+                <Text style={[s.reasonOptionText, rejectReason === r.id && s.reasonOptionTextActive]}>{r.labelRu}</Text>
+              </TouchableOpacity>
+            ))}
+            {rejectReason === 'other' && (
+              <TextInput style={[s.input, { marginTop: 8 }]} value={rejectCustom} onChangeText={setRejectCustom}
+                placeholder="Введите причину" placeholderTextColor="#555" />
+            )}
+            <View style={s.modalBtns}>
+              <TouchableOpacity style={s.cancelBtn} onPress={() => setShowReject(false)}>
+                <Text style={s.cancelBtnText}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.saveBtn, { backgroundColor: '#ef4444' }]} onPress={submitReject}>
+                <Text style={[s.saveBtnText, { color: '#fff' }]}>Отклонить</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -170,4 +218,9 @@ const s=StyleSheet.create({
   cancelBtnText:{color:'#aaa',fontSize:15},
   saveBtn:{flex:1,padding:14,borderRadius:10,backgroundColor:'#10b981',alignItems:'center'},
   saveBtnText:{color:'#000',fontSize:15,fontWeight:'600'},
+  modalHint:{color:'#666',fontSize:12,marginBottom:12},
+  reasonOption:{padding:12,borderRadius:8,backgroundColor:'#0a0a0a',borderWidth:1,borderColor:'#222',marginBottom:6},
+  reasonOptionActive:{borderColor:'#ef4444',backgroundColor:'#ef444410'},
+  reasonOptionText:{color:'#888',fontSize:14},
+  reasonOptionTextActive:{color:'#ef4444',fontWeight:'600'},
 });

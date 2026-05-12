@@ -4,6 +4,14 @@ import {
 } from 'react-native';
 import { useAuth, authFetch } from '../contexts/AuthContext';
 
+// Simple photo capture — in production use react-native-image-picker
+async function takePhoto(): Promise<string> {
+  // Dev mode: return a placeholder. Production: launch camera via ImagePicker
+  return new Promise((resolve) => {
+    setTimeout(() => resolve('photo_' + Date.now()), 300);
+  });
+}
+
 interface TaskStep {
   id: string; stepIndex: number; completed: boolean; photoUrl?: string; note?: string;
 }
@@ -40,6 +48,18 @@ export default function TasksScreen() {
   async function toggleStep(taskId: string, stepId: string) {
     try {
       await authFetch(`/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ stepId }) });
+      loadTasks();
+    } catch {}
+  }
+
+  async function handleStepPhoto(taskId: string, stepIndex: number) {
+    try {
+      const photoId = await takePhoto();
+      Alert.alert('📸', 'Фото сделано: ' + photoId);
+      await authFetch('/tasks/photo', {
+        method: 'POST',
+        body: JSON.stringify({ taskId, stepIndex, description: photoId }),
+      });
       loadTasks();
     } catch {}
   }
@@ -109,7 +129,12 @@ export default function TasksScreen() {
                   <Text style={[styles.stepLabel, step.completed && styles.stepLabelDone]}>
                     {STEP_LABELS[step.stepIndex] || `Шаг ${step.stepIndex + 1}`}
                   </Text>
-                  {step.completed && <Text style={styles.stepPhoto}>📸</Text>}
+                  {!step.completed && (
+                    <TouchableOpacity style={styles.photoBtn} onPress={() => handleStepPhoto(task.id, step.stepIndex)}>
+                      <Text style={styles.photoBtnIcon}>📸</Text>
+                    </TouchableOpacity>
+                  )}
+                  {step.completed && step.photoUrl && <Text style={styles.stepPhoto}>📸</Text>}
                 </TouchableOpacity>
               ))}
             </View>
@@ -164,6 +189,8 @@ const styles = StyleSheet.create({
   stepLabel: { color: '#ccc', fontSize: 13, flex: 1 },
   stepLabelDone: { color: '#666', textDecorationLine: 'line-through' },
   stepPhoto: { fontSize: 14 },
+  photoBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: '#3b82f620' },
+  photoBtnIcon: { fontSize: 14 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, borderTopWidth: 1, borderTopColor: '#1a1a1a', paddingTop: 10 },
   statusTag: { fontSize: 12, fontWeight: '600' },
   deadline: { color: '#666', fontSize: 12 },

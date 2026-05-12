@@ -6,30 +6,36 @@ import { useAuth, authFetch } from '../contexts/AuthContext';
 interface RewardItem { id:string; nameRu:string; descriptionRu?:string; itemType:string; pointsCost:number; stockQuantity:number; imageUrl?:string; }
 interface PointsRecord { id:string; points:number; reason:string; type:string; createdAt:string; }
 
+interface RedemptionRecord { id:string; pointsSpent:number; createdAt:string; item:{id:string;nameRu:string;imageUrl?:string;itemType:string}; }
+
 export default function PointsScreen() {
   const { user } = useAuth();
   const [balance, setBalance] = useState(0);
   const [earned, setEarned] = useState(0);
   const [records, setRecords] = useState<PointsRecord[]>([]);
+  const [redemptions, setRedemptions] = useState<RedemptionRecord[]>([]);
   const [rewards, setRewards] = useState<RewardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReward, setShowReward] = useState(false);
   const [selectedReward, setSelectedReward] = useState<RewardItem|null>(null);
   const [redeemMsg, setRedeemMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [historyTab, setHistoryTab] = useState<'points'|'redemptions'>('points');
 
   useEffect(()=>{loadAll()},[]);
 
   async function loadAll(){
     try{
-      const [ptsRes, recsRes, rwdsRes] = await Promise.all([
+      const [ptsRes, recsRes, rwdsRes, rdmRes] = await Promise.all([
         authFetch('/points'),
         authFetch('/points/records'),
         authFetch('/points/rewards'),
+        authFetch('/points/redemptions'),
       ]);
       if(ptsRes.ok){const d=await ptsRes.json();setBalance(d.totalPoints||0);setEarned(d.earnedThisMonth||0);}
       if(recsRes.ok) setRecords(await recsRes.json());
       if(rwdsRes.ok) setRewards(await rwdsRes.json());
+      if(rdmRes.ok) setRedemptions(await rdmRes.json());
     }catch{}
     setLoading(false);setRefreshing(false);
   }
@@ -63,8 +69,8 @@ export default function PointsScreen() {
         <TouchableOpacity style={s.actionBtn} onPress={()=>setShowReward(true)}>
           <Text style={s.actionIcon}>🎁</Text><Text style={s.actionText}>Магазин</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.actionBtn}>
-          <Text style={s.actionIcon}>📜</Text><Text style={s.actionText}>История</Text>
+        <TouchableOpacity style={s.actionBtn} onPress={()=>setHistoryTab(historyTab==='points'?'redemptions':'points')}>
+          <Text style={s.actionIcon}>📜</Text><Text style={s.actionText}>{historyTab==='points'?'Обмены':'История'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -80,16 +86,26 @@ export default function PointsScreen() {
         {rewards.length===0&&<Text style={s.empty}>Нет наград</Text>}
       </ScrollView>
 
-      <Text style={s.sectionTitle}>📜 Последние операции</Text>
+      <Text style={s.sectionTitle}>{historyTab==='points'?'📜 Последние операции':'🎁 История обменов'}</Text>
       <View style={s.recordList}>
-        {records.slice(0,10).map(r=>(
-          <View key={r.id} style={s.recordRow}>
-            <Text style={[s.recordPts,{color:r.points>0?'#10b981':'#ef4444'}]}>{r.points>0?'+'+r.points:r.points}</Text>
-            <Text style={s.recordReason}>{r.reason||r.type}</Text>
-            <Text style={s.recordDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</Text>
-          </View>
-        ))}
-        {records.length===0&&<Text style={s.empty}>Нет операций</Text>}
+        {historyTab==='points'?(
+          records.slice(0,10).map(r=>(
+            <View key={r.id} style={s.recordRow}>
+              <Text style={[s.recordPts,{color:r.points>0?'#10b981':'#ef4444'}]}>{r.points>0?'+'+r.points:r.points}</Text>
+              <Text style={s.recordReason}>{r.reason||r.type}</Text>
+              <Text style={s.recordDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</Text>
+            </View>
+          ))
+        ):(
+          redemptions.slice(0,10).map(r=>(
+            <View key={r.id} style={s.recordRow}>
+              <Text style={[s.recordPts,{color:'#ef4444'}]}>-{r.pointsSpent}</Text>
+              <Text style={s.recordReason}>🎁 {r.item?.nameRu||'Награда'}</Text>
+              <Text style={s.recordDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</Text>
+            </View>
+          ))
+        )}
+        {(historyTab==='points'?records:redemptions).length===0&&<Text style={s.empty}>Нет записей</Text>}
       </View>
 
       <View style={{height:80}}/>

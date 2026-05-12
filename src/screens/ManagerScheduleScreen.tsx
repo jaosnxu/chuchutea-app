@@ -16,6 +16,11 @@ interface ScheduleEntry {
 
 const SHIFT_TYPES = ['morning', 'afternoon', 'evening', 'night'];
 
+interface ScheduleTemplate {
+  id: string; name: string; description: string;
+  shifts: { dayOfWeek: number; shiftType: string; startTime: string; endTime: string }[];
+}
+
 export default function ManagerScheduleScreen() {
   const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -23,6 +28,12 @@ export default function ManagerScheduleScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAdd, setShowAdd] = useState(false);
+  const [showTemplate, setShowTemplate] = useState(false);
+  const [templates, setTemplates] = useState<ScheduleTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [templateMsg, setTemplateMsg] = useState('');
+  // Compliance check
+  const [complianceWarnings, setComplianceWarnings] = useState<string[]>([]);
   const [form, setForm] = useState({ employeeId: '', date: selectedDate, shiftType: 'morning', startTime: '08:00', endTime: '16:00' });
   const [message, setMessage] = useState('');
 
@@ -38,6 +49,57 @@ export default function ManagerScheduleScreen() {
       if (schedRes.ok) setSchedules(await schedRes.json());
     } catch {}
     setLoading(false);
+  }
+
+  // Load templates
+  async function loadTemplates() {
+    try { const r = await authFetch('/schedules/templates'); if (r.ok) setTemplates(await r.json()); } catch {}
+  }
+
+  // Compliance check: max consecutive work days
+  function checkCompliance(empId: string, newDate: string): string[] {
+    const w: string[] = [];
+    const empScheds = schedules.filter(s => s.employeeId === empId);
+    // Check consecutive days before and after
+    const target = new Date(newDate + 'T00:00:00');
+    let consecutiveBefore = 0;
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(target); d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      if (empScheds.some(s => s.date.startsWith(key))) consecutiveBefore++;
+      else break;
+    }
+    let consecutiveAfter = 0;
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(target); d.setDate(d.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      if (empScheds.some(s => s.date.startsWith(key))) consecutiveAfter++;
+      else break;
+    }
+    if (consecutiveBefore >= 5) w.push(`⚠️ Уже ${consecutiveBefore} дней подряд до этой даты`);
+    if (consecutiveAfter >= 5) w.push(`⚠️ ${consecutiveAfter} дней подряд после этой даты`);
+    if (consecutiveBefore + consecutiveAfter + 1 > 6) w.push('⛔ Превышен лимит: более 6 дней подряд');
+    return w;
+  }
+
+  // Apply template
+  async function applyTemplate() {
+    if (!selectedTemplate) { setTemplateMsg('Выберите шаблон'); return; }
+    setTemplateMsg('');
+    try {
+      const r = await authFetch('/schedules/templates', {
+        method: 'POST',
+        body: JSON.stringify({
+          templateId: selectedTemplate,
+          employeeIds: employees.map(e => e.id),
+          startDate: selectedDate,
+          orgId: 's-001',
+        }),
+      });
+      const d = await r.json();
+      if (r.ok) { setTemplateMsg('✅ ' + d.message); setShowTemplate(false); loadData(); }
+      else setTemplateMsg('❌ ' + (d.error || 'Ошибка'));
+    } catch { setTemplateMsg('❌ Нет соединения'); }
   }
 
   async function addSchedule() {
@@ -73,9 +135,14 @@ export default function ManagerScheduleScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>📅 График смен</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => { setForm({ ...form, date: selectedDate }); setShowAdd(true); }}>
-          <Text style={styles.addBtnText}>+ Смена</Text>
-        </TouchableOpacity>
+        <View style={styles.headerBtns}>
+          <TouchableOpacity style={styles.templateBtn} onPress={() => { setShowTemplate(true); loadTemplates(); }}>
+            <Text style={styles.templateBtnText}>📋 Шаблон</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addBtn} onPress={() => { setForm({ ...form, date: selectedDate }); setShowAdd(true); }}>
+            <Text style={styles.addBtnText}>+ Смена</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {message ? <Text style={{ color: message.startsWith('✅') ? '#10b981' : '#ef4444', textAlign: 'center', marginBottom: 12 }}>{message}</Text> : null}
@@ -136,13 +203,21 @@ export default function ManagerScheduleScreen() {
               {employees.map(emp => (
                 <TouchableOpacity key={emp.id}
                   style={[styles.empOption, form.employeeId === emp.id && styles.empOptionActive]}
-                  onPress={() => setForm({ ...form, employeeId: emp.id })}>
+                  onPress={() => { setForm({ ...form, employeeId: emp.id }); setComplianceWarnings(checkCompliance(emp.id, form.date)); }}>
                   <Text style={[styles.empOptionText, form.employeeId === emp.id && styles.empOptionTextActive]}>
                     {emp.firstNameRu} {emp.lastNameRu}
                   </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
+
+            {complianceWarnings.length > 0 && (
+              <View style={styles.warningBox}>
+                {complianceWarnings.map((w, i) => (
+                  <Text key={i} style={styles.warningText}>{w}</Text>
+                ))}
+              </View>
+            )}
 
             <View style={styles.shiftTypeRow}>
               {SHIFT_TYPES.map(t => (
@@ -177,6 +252,33 @@ export default function ManagerScheduleScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Template Modal */}
+      <Modal visible={showTemplate} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>📋 Шаблон расписания</Text>
+            <Text style={styles.fieldLabel}>Выберите шаблон</Text>
+            {templates.map(t => (
+              <TouchableOpacity key={t.id}
+                style={[styles.templateOption, selectedTemplate === t.id && styles.templateOptionActive]}
+                onPress={() => setSelectedTemplate(t.id)}>
+                <Text style={[styles.templateOptionName, selectedTemplate === t.id && styles.templateOptionNameActive]}>{t.name}</Text>
+                <Text style={styles.templateOptionDesc}>{t.description} · {t.shifts.length} смен</Text>
+              </TouchableOpacity>
+            ))}
+            {templateMsg ? <Text style={{ color: templateMsg.startsWith('✅') ? '#10b981' : '#ef4444', textAlign: 'center', marginTop: 8 }}>{templateMsg}</Text> : null}
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowTemplate(false)}>
+                <Text style={styles.cancelBtnText}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={applyTemplate}>
+                <Text style={styles.saveBtnText}>Применить</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -185,7 +287,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a', paddingHorizontal: 16 },
   centered: { flex: 1, backgroundColor: '#0a0a0a', alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 20 },
+  headerBtns: { flexDirection: 'row', gap: 8 },
   title: { fontSize: 22, fontWeight: '700', color: '#fff' },
+  templateBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#10b981', backgroundColor: '#10b98115' },
+  templateBtnText: { color: '#10b981', fontWeight: '600', fontSize: 13 },
   addBtn: { backgroundColor: '#10b981', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   addBtnText: { color: '#000', fontWeight: '600', fontSize: 14 },
   dateStrip: { marginBottom: 20 },
@@ -226,4 +331,13 @@ const styles = StyleSheet.create({
   cancelBtnText: { color: '#aaa', fontSize: 15 },
   saveBtn: { flex: 1, padding: 14, borderRadius: 10, backgroundColor: '#10b981', alignItems: 'center' },
   saveBtnText: { color: '#000', fontSize: 15, fontWeight: '600' },
+  // Compliance warnings
+  warningBox: { backgroundColor: '#f59e0b10', borderWidth: 1, borderColor: '#f59e0b40', borderRadius: 8, padding: 10, marginBottom: 12 },
+  warningText: { color: '#f59e0b', fontSize: 12, marginBottom: 4 },
+  // Template options
+  templateOption: { padding: 14, borderRadius: 10, backgroundColor: '#0a0a0a', borderWidth: 1, borderColor: '#222', marginBottom: 8 },
+  templateOptionActive: { borderColor: '#10b981', backgroundColor: '#10b98110' },
+  templateOptionName: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  templateOptionNameActive: { color: '#10b981' },
+  templateOptionDesc: { color: '#666', fontSize: 12, marginTop: 4 },
 });

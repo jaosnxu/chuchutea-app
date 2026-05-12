@@ -20,6 +20,7 @@
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.25.0",
     "react-native-vision-camera": "^5.0.9",
+    "react-native-webview": "^13.16.1",
     "react-native-worklets-core": "^1.6.3"
   },
   "devDependencies": {
