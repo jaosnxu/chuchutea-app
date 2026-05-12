@@ -22,27 +22,22 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platforms;android-34 build-tools;34.0.0 ndk;27.3.13750724 cmake;3.22.1 platform-tools'
-
-      - name: Install deps
-        run: npm ci --legacy-peer-deps 2>&1 || npm install --legacy-peer-deps 2>&1
-
-      - name: Disable New Architecture
-        run: |
-          grep -q "newArchEnabled=true" android/gradle.properties && sed -i 's/newArchEnabled=true/newArchEnabled=false/' android/gradle.properties || echo "newArchEnabled=false" >> android/gradle.properties
+      - name: Install npm deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
       - name: Build APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
+          echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --warning-mode all --stacktrace 2>&1
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: CHUCHUTEA-APK
           path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
