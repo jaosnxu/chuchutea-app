@@ -22,8 +22,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install npm deps
-        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      - name: Regenerate lockfile (Linux native)
+        run: rm -f package-lock.json && npm install --legacy-peer-deps
 
       - name: Build APK
         env:
@@ -33,11 +33,11 @@ jobs:
           echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --info 2>&1 | tail -200
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: CHUCHUTEA-APK
           path: android/app/build/outputs/apk/release/*.apk
-          retention-days: 30
