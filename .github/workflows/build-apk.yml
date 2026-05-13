@@ -3,7 +3,6 @@ name: Build APK
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -22,7 +21,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Regenerate lockfile (Linux native)
+      - name: npm install
         run: rm -f package-lock.json && npm install --legacy-peer-deps
 
       - name: Build APK
@@ -31,13 +30,10 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > android/local.properties
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --info 2>&1 | tail -200
+          cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: CHUCHUTEA-APK
-          path: android/app/build/outputs/apk/release/*.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
